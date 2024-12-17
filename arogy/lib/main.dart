@@ -7,15 +7,23 @@ void main() {
 }
 
 class HeartAttackPredictorApp extends StatelessWidget {
+  const HeartAttackPredictorApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        primarySwatch: Colors.red,
+      ),
       home: PredictorForm(),
     );
   }
 }
 
 class PredictorForm extends StatefulWidget {
+  const PredictorForm({super.key});
+
   @override
   _PredictorFormState createState() => _PredictorFormState();
 }
@@ -59,59 +67,141 @@ class _PredictorFormState extends State<PredictorForm> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Heart Attack Risk Predictor'),
+        centerTitle: true,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.red, Colors.orange],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
       ),
-      body: Padding(
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.orange.shade100, Colors.red.shade100],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
         padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              TextFormField(
-                controller: _ageController,
-                decoration: InputDecoration(labelText: 'Age'),
-                keyboardType: TextInputType.number,
-                validator: (value) => value!.isEmpty ? 'Enter your age' : null,
-              ),
-              TextFormField(
-                controller: _bpController,
-                decoration: InputDecoration(labelText: 'Blood Pressure'),
-                keyboardType: TextInputType.number,
-                validator: (value) =>
-                    value!.isEmpty ? 'Enter your blood pressure' : null,
-              ),
-              TextFormField(
-                controller: _cholesterolController,
-                decoration: InputDecoration(labelText: 'Cholesterol'),
-                keyboardType: TextInputType.number,
-                validator: (value) =>
-                    value!.isEmpty ? 'Enter your cholesterol' : null,
-              ),
-              SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () {
-                  if (_formKey.currentState!.validate()) {
-                    _getPrediction();
-                  }
-                },
-                child: Text('Predict'),
-              ),
-              SizedBox(height: 20),
-              if (_prediction != null) ...[
-                Text(
-                  'Prediction: $_prediction',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        child: SingleChildScrollView(
+          child: Card(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16.0),
+            ),
+            elevation: 8.0,
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      'Enter Your Details',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.red,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    SizedBox(height: 20),
+                    TextFormField(
+                      controller: _ageController,
+                      decoration: InputDecoration(
+                        labelText: 'Age',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8.0),
+                        ),
+                        prefixIcon: Icon(Icons.cake, color: Colors.red),
+                      ),
+                      keyboardType: TextInputType.number,
+                      validator: (value) => value!.isEmpty ? 'Enter your age' : null,
+                    ),
+                    SizedBox(height: 16),
+                    TextFormField(
+                      controller: _bpController,
+                      decoration: InputDecoration(
+                        labelText: 'Blood Pressure',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8.0),
+                        ),
+                        prefixIcon: Icon(Icons.favorite, color: Colors.red),
+                      ),
+                      keyboardType: TextInputType.number,
+                      validator: (value) =>
+                          value!.isEmpty ? 'Enter your blood pressure' : null,
+                    ),
+                    SizedBox(height: 16),
+                    TextFormField(
+                      controller: _cholesterolController,
+                      decoration: InputDecoration(
+                        labelText: 'Cholesterol',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8.0),
+                        ),
+                        prefixIcon: Icon(Icons.water_drop, color: Colors.red),
+                      ),
+                      keyboardType: TextInputType.number,
+                      validator: (value) =>
+                          value!.isEmpty ? 'Enter your cholesterol' : null,
+                    ),
+                    SizedBox(height: 20),
+                    ElevatedButton(
+                      onPressed: () {
+                        if (_formKey.currentState!.validate()) {
+                          _getPrediction();
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        padding: EdgeInsets.symmetric(vertical: 16.0), backgroundColor: Colors.red,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8.0),
+                        ),
+                        textStyle: TextStyle(fontSize: 18),
+                      ),
+                      child: Text('Predict'),
+                    ),
+                    SizedBox(height: 20),
+                    if (_prediction != null) ...[
+                      Divider(color: Colors.red),
+                      Text(
+                        'Prediction:',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.red,
+                        ),
+                      ),
+                      Text(
+                        _prediction!,
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      if (_probabilities != null)
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: _probabilities!.entries.map((entry) {
+                            return Text(
+                              '${entry.key}: ${(entry.value * 100).toStringAsFixed(2)}%',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.grey.shade700,
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                    ]
+                  ],
                 ),
-                if (_probabilities != null)
-                  Column(
-                    children: _probabilities!.entries.map((entry) {
-                      return Text(
-                        '${entry.key}: ${(entry.value * 100).toStringAsFixed(2)}%',
-                        style: TextStyle(fontSize: 16),
-                      );
-                    }).toList(),
-                  )
-              ]
-            ],
+              ),
+            ),
           ),
         ),
       ),
