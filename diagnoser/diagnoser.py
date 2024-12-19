@@ -12,7 +12,13 @@ import seaborn as sns
 import joblib
 
 # Read the dataset for heart attack prediction
-data = pd.read_csv('heart_attack_data.csv')
+# data = pd.read_csv('heart_attack_data.csv')
+
+# data = pd.read_csv('synthetic_health_dataset.csv')
+
+# data = pd.read_csv('heart_attack_data1.csv')
+
+data = pd.read_csv('enhanced_heart_attack_data.csv')
 
 # Handle missing values in the dataset (numeric columns only)
 data.fillna(data.mean(numeric_only=True), inplace=True)
