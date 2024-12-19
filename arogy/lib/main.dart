@@ -1,9 +1,34 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 void main() {
+  startFlaskServer(); // Start the Flask server
   runApp(HeartAttackPredictorApp());
+}
+
+// Function to start the Flask server
+void startFlaskServer() async {
+  try {
+    // Start the Flask server using Python
+    final process = await Process.start(
+      'python', // Ensure 'python' is accessible via your system's PATH
+      ['app.py'], // Replace 'app.py' with the path to your Flask script
+      workingDirectory: Directory.current.path, // Adjust if app.py is elsewhere
+      runInShell: true,
+    );
+
+    // Listen for server output
+    process.stdout.transform(utf8.decoder).listen((data) {
+      print('Flask server: $data');
+    });
+    process.stderr.transform(utf8.decoder).listen((data) {
+      print('Flask server error: $data');
+    });
+  } catch (e) {
+    print('Error starting Flask server: $e');
+  }
 }
 
 class HeartAttackPredictorApp extends StatelessWidget {
