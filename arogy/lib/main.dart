@@ -3,105 +3,56 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
-void main() {
-  startFlaskServer(); // Start the Flask server
+Process? flaskProcess;
+bool isServerRunning = false;
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await startFlaskServer(); // Wait for the server to be ready
   runApp(HeartAttackPredictorApp());
 }
 
-// Function to start the Flask server
-void startFlaskServer() async {
+Future<void> startFlaskServer() async {
   try {
-    // Ensure Python is installed, and install if not
-    await ensurePythonInstalled();
-
-    // Start the Flask server using Python
     final process = await Process.start(
-      'python', // Ensure 'python' is accessible via your system's PATH
-      ['app.py'], // Replace 'app.py' with the path to your Flask script
-      workingDirectory: Directory.current.path, // Adjust if app.py is elsewhere
-      runInShell: true,
+      Platform.isWindows ? 'dist\\app.exe' : 'dist/app.exe',
+      [],
     );
 
-    // Listen for server output
+    flaskProcess = process;
+
     process.stdout.transform(utf8.decoder).listen((data) {
-      print('Flask server: $data');
+      print('Flask stdout: $data');
     });
+
     process.stderr.transform(utf8.decoder).listen((data) {
-      print('Flask server error: $data');
+      print('Flask stderr: $data');
     });
+
+    // Poll the server until it responds
+    const maxRetries = 10;
+    for (int i = 0; i < maxRetries; i++) {
+      try {
+        final response = await http.get(Uri.parse('http://127.0.0.1:5000'));
+        if (response.statusCode == 200 || response.statusCode == 404) {
+          isServerRunning = true;
+          print("✅ Flask server is ready.");
+          break;
+        }
+      } catch (e) {
+        // Server not ready yet
+      }
+      await Future.delayed(Duration(seconds: 1));
+    }
+
+    if (!isServerRunning) {
+      print("❌ Flask server failed to start in time.");
+    }
   } catch (e) {
     print('Error starting Flask server: $e');
   }
 }
 
-// Function to ensure Python is installed
-Future<void> ensurePythonInstalled() async {
-  try {
-    final result = await Process.run('python', ['--version']);
-    if (result.exitCode == 0) {
-      print('Python installation verified: ${result.stdout}');
-      return;
-    }
-  } catch (e) {
-    print('Python is not installed or not found in PATH. Attempting to install...');
-  }
-
-  // Download Python installer for the respective OS
-  if (Platform.isWindows) {
-    await downloadAndInstallPython(
-      url: 'https://www.python.org/ftp/python/3.11.6/python-3.11.6-amd64.exe',
-      installerName: 'python-installer.exe',
-      installArgs: ['/quiet', 'InstallAllUsers=1', 'PrependPath=1'],
-    );
-  } else if (Platform.isMacOS) {
-    print('Please install Python manually on macOS: https://www.python.org/downloads/');
-    exit(1); // Exit the program
-  } else if (Platform.isLinux) {
-    print('Attempting to install Python using apt...');
-    await Process.run('sudo', ['apt', 'update']);
-    await Process.run('sudo', ['apt', 'install', '-y', 'python3']);
-    print('Python installed via apt!');
-  } else {
-    throw Exception('Unsupported platform for automatic Python installation.');
-  }
-}
-
-// Function to download and install Python
-Future<void> downloadAndInstallPython({
-  required String url,
-  required String installerName,
-  required List<String> installArgs,
-}) async {
-  final installerFile = File(installerName);
-
-  // Download Python installer
-  print('Downloading Python installer from $url...');
-  final response = await http.get(Uri.parse(url));
-  if (response.statusCode == 200) {
-    await installerFile.writeAsBytes(response.bodyBytes);
-    print('Python installer downloaded successfully!');
-  } else {
-    throw Exception('Failed to download Python installer. Status code: ${response.statusCode}');
-  }
-
-  // Run the installer
-  print('Running Python installer...');
-  final installProcess = await Process.run(
-    installerFile.path,
-    installArgs,
-    runInShell: true,
-  );
-
-  if (installProcess.exitCode == 0) {
-    print('Python installed successfully!');
-  } else {
-    throw Exception('Failed to install Python. Please check the installer output.');
-  }
-
-  // Clean up installer file
-  await installerFile.delete();
-  print('Installer cleaned up.');
-}
 
 class HeartAttackPredictorApp extends StatelessWidget {
   const HeartAttackPredictorApp({super.key});
@@ -132,29 +83,53 @@ class _PredictorFormState extends State<PredictorForm> {
   final TextEditingController _cholesterolController = TextEditingController();
   String? _prediction;
   Map<String, dynamic>? _probabilities;
+  String _statusMessage = "Waiting for server...";
+
+  @override
+  void dispose() {
+    flaskProcess?.kill();
+    super.dispose();
+  }
 
   Future<void> _getPrediction() async {
-    final url = Uri.parse('http://127.0.0.1:5000/predict'); // Adjust API URL
-    final response = await http.post(
-      url,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'Age': int.parse(_ageController.text),
-        'BloodPressure': int.parse(_bpController.text),
-        'Cholesterol': int.parse(_cholesterolController.text),
-      }),
-    );
-
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
+    if (!isServerRunning) {
       setState(() {
-        _prediction = data['category'];
-        _probabilities = data['probabilities'];
+        _statusMessage = "Server is not yet ready. Please try again later.";
       });
-    } else {
+      return;
+    }
+
+    final url = Uri.parse('http://127.0.0.1:5000/predict');
+    try {
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'Age': int.parse(_ageController.text),
+          'BloodPressure': int.parse(_bpController.text),
+          'Cholesterol': int.parse(_cholesterolController.text),
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        setState(() {
+          _prediction = data['category'];
+          _probabilities = data['probabilities'];
+          _statusMessage = "Prediction received!";
+        });
+      } else {
+        setState(() {
+          _prediction = 'Error: ${response.body}';
+          _probabilities = null;
+          _statusMessage = "Failed to get prediction!";
+        });
+      }
+    } catch (e) {
       setState(() {
-        _prediction = 'Error: ${response.body}';
+        _prediction = null;
         _probabilities = null;
+        _statusMessage = "Failed to connect to server: $e";
       });
     }
   }
@@ -262,6 +237,16 @@ class _PredictorFormState extends State<PredictorForm> {
                         textStyle: TextStyle(fontSize: 18),
                       ),
                       child: Text('Predict'),
+                    ),
+                    SizedBox(height: 20),
+                    Text(
+                      _statusMessage,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.black,
+                      ),
+                      textAlign: TextAlign.center,
                     ),
                     SizedBox(height: 20),
                     if (_prediction != null) ...[
