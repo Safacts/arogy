@@ -84,6 +84,8 @@ class _PredictorFormState extends State<PredictorForm> {
   Map<String, dynamic>? _probabilities;
   String _statusMessage = "Initializing server...";
 
+  bool _isDrawerOpen = false;
+
   @override
   void initState() {
     super.initState();
@@ -148,160 +150,242 @@ class _PredictorFormState extends State<PredictorForm> {
     }
   }
 
+  void _showAboutDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text("About App"),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: Scrollbar(
+              thumbVisibility: true,
+              child: SingleChildScrollView(
+                child: Text(
+                  '''Heart Attack Risk Predictor\n\nThis application helps assess heart attack risk based on user data like age, BP, and cholesterol.\n\nFeatures:\n- Local ML-based prediction\n- Clean UI\n- Built with Flutter + Python\n\nVersion: 1.0.0\nDeveloped by: Aadi''',
+                  style: TextStyle(fontSize: 16),
+                ),
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text("Close"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _toggleDrawer() {
+    setState(() {
+      _isDrawerOpen = !_isDrawerOpen;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Heart Attack Risk Predictor'),
-        centerTitle: true,
-        flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.red, Colors.orange],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
+      body: Stack(
+        children: [
+          Column(
+            children: [
+              AppBar(
+                title: Text('Heart Attack Risk Predictor'),
+                centerTitle: true,
+                backgroundColor: Colors.red,
+                leading: MouseRegion(
+                  onEnter: (_) => _toggleDrawer(),
+                  child: IconButton(
+                    icon: Icon(Icons.menu),
+                    onPressed: _toggleDrawer,
+                  ),
+                ),
+              ),
+              Expanded(
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.orange.shade100,
+                        Colors.red.shade100
+                      ],
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                    ),
+                  ),
+                  padding: const EdgeInsets.all(16.0),
+                  child: SingleChildScrollView(
+                    child: Card(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16.0),
+                      ),
+                      elevation: 8.0,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: _buildForm(),
+                      ),
+                    ),
+                  ),
+                ),
+              )
+            ],
           ),
-        ),
-      ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Colors.orange.shade100, Colors.red.shade100],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-        ),
-        padding: const EdgeInsets.all(16.0),
-        child: SingleChildScrollView(
-          child: Card(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16.0),
-            ),
-            elevation: 8.0,
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Form(
-                key: _formKey,
+          AnimatedPositioned(
+            duration: Duration(milliseconds: 300),
+            left: _isDrawerOpen ? 0 : -200,
+            top: 0,
+            bottom: 0,
+            child: MouseRegion(
+              onExit: (_) => setState(() => _isDrawerOpen = false),
+              child: Container(
+                width: 200,
+                color: Colors.red.shade100,
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Enter Your Details',
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.red,
-                      ),
-                      textAlign: TextAlign.center,
+                    SizedBox(height: 80),
+                    ListTile(
+                      title: Text("About App"),
+                      onTap: _showAboutDialog,
                     ),
-                    SizedBox(height: 20),
-                    TextFormField(
-                      controller: _ageController,
-                      decoration: InputDecoration(
-                        labelText: 'Age',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8.0),
-                        ),
-                        prefixIcon: Icon(Icons.cake, color: Colors.red),
-                      ),
-                      keyboardType: TextInputType.number,
-                      validator: (value) =>
-                          value!.isEmpty ? 'Enter your age' : null,
-                    ),
-                    SizedBox(height: 16),
-                    TextFormField(
-                      controller: _bpController,
-                      decoration: InputDecoration(
-                        labelText: 'Blood Pressure',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8.0),
-                        ),
-                        prefixIcon: Icon(Icons.favorite, color: Colors.red),
-                      ),
-                      keyboardType: TextInputType.number,
-                      validator: (value) =>
-                          value!.isEmpty ? 'Enter your blood pressure' : null,
-                    ),
-                    SizedBox(height: 16),
-                    TextFormField(
-                      controller: _cholesterolController,
-                      decoration: InputDecoration(
-                        labelText: 'Cholesterol',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8.0),
-                        ),
-                        prefixIcon: Icon(Icons.water_drop, color: Colors.red),
-                      ),
-                      keyboardType: TextInputType.number,
-                      validator: (value) =>
-                          value!.isEmpty ? 'Enter your cholesterol' : null,
-                    ),
-                    SizedBox(height: 20),
-                    ElevatedButton(
-                      onPressed: () {
-                        if (_formKey.currentState!.validate()) {
-                          _getPrediction();
-                        }
+                    ListTile(title: Text("Version 1.0")),
+                    ListTile(
+                      title: Text("Exit"),
+                      onTap: () {
+                        flaskProcess?.kill();
+                        exit(0);
                       },
-                      style: ElevatedButton.styleFrom(
-                        padding: EdgeInsets.symmetric(vertical: 16.0),
-                        backgroundColor: Colors.red,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8.0),
-                        ),
-                        textStyle: TextStyle(fontSize: 18),
-                      ),
-                      child: Text('Predict'),
                     ),
-                    SizedBox(height: 20),
-                    Text(
-                      _statusMessage,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.black,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    SizedBox(height: 20),
-                    if (_prediction != null) ...[
-                      Divider(color: Colors.red),
-                      Text(
-                        'Prediction:',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.red,
-                        ),
-                      ),
-                      Text(
-                        _prediction!,
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      if (_probabilities != null)
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: _probabilities!.entries.map((entry) {
-                            return Text(
-                              '${entry.key}: ${(entry.value * 100).toStringAsFixed(2)}%',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.grey.shade700,
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                    ]
                   ],
                 ),
               ),
             ),
           ),
-        ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildForm() {
+    return Form(
+      key: _formKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'Enter Your Details',
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: Colors.red,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          SizedBox(height: 20),
+          TextFormField(
+            controller: _ageController,
+            decoration: InputDecoration(
+              labelText: 'Age',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8.0),
+              ),
+              prefixIcon: Icon(Icons.cake, color: Colors.red),
+            ),
+            keyboardType: TextInputType.number,
+            validator: (value) =>
+                value!.isEmpty ? 'Enter your age' : null,
+          ),
+          SizedBox(height: 16),
+          TextFormField(
+            controller: _bpController,
+            decoration: InputDecoration(
+              labelText: 'Blood Pressure',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8.0),
+              ),
+              prefixIcon: Icon(Icons.favorite, color: Colors.red),
+            ),
+            keyboardType: TextInputType.number,
+            validator: (value) =>
+                value!.isEmpty ? 'Enter your blood pressure' : null,
+          ),
+          SizedBox(height: 16),
+          TextFormField(
+            controller: _cholesterolController,
+            decoration: InputDecoration(
+              labelText: 'Cholesterol',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8.0),
+              ),
+              prefixIcon: Icon(Icons.water_drop, color: Colors.red),
+            ),
+            keyboardType: TextInputType.number,
+            validator: (value) =>
+                value!.isEmpty ? 'Enter your cholesterol' : null,
+          ),
+          SizedBox(height: 20),
+          ElevatedButton(
+            onPressed: () {
+              if (_formKey.currentState!.validate()) {
+                _getPrediction();
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              padding: EdgeInsets.symmetric(vertical: 16.0),
+              backgroundColor: Colors.red,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8.0),
+              ),
+              textStyle: TextStyle(fontSize: 18),
+            ),
+            child: Text('Predict'),
+          ),
+          SizedBox(height: 20),
+          Text(
+            _statusMessage,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Colors.black,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          SizedBox(height: 20),
+          if (_prediction != null) ...[
+            Divider(color: Colors.red),
+            Text(
+              'Prediction:',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.red,
+              ),
+            ),
+            Text(
+              _prediction!,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            if (_probabilities != null)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: _probabilities!.entries.map((entry) {
+                  return Text(
+                    '${entry.key}: ${(entry.value * 100).toStringAsFixed(2)}%',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.grey.shade700,
+                    ),
+                  );
+                }).toList(),
+              ),
+          ]
+        ],
       ),
     );
   }
