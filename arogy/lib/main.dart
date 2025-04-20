@@ -6,18 +6,22 @@ import 'package:http/http.dart' as http;
 Process? flaskProcess;
 bool isServerRunning = false;
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await startFlaskServer(); // Wait for the server to be ready
+void main() {
   runApp(HeartAttackPredictorApp());
 }
 
 Future<void> startFlaskServer() async {
   try {
-    final process = await Process.start(
-      Platform.isWindows ? 'dist\\app.exe' : 'dist/app.exe',
-      [],
-    );
+    final executablePath = Platform.resolvedExecutable;
+    final currentDir = File(executablePath).parent.parent.path;
+    final flaskExePath = '$currentDir\\dist\\app.exe';
+
+    if (!File(flaskExePath).existsSync()) {
+      print("❌ Flask server .exe not found at: $flaskExePath");
+      return;
+    }
+
+    final process = await Process.start(flaskExePath, []);
 
     flaskProcess = process;
 
@@ -29,7 +33,6 @@ Future<void> startFlaskServer() async {
       print('Flask stderr: $data');
     });
 
-    // Poll the server until it responds
     const maxRetries = 10;
     for (int i = 0; i < maxRetries; i++) {
       try {
@@ -39,9 +42,7 @@ Future<void> startFlaskServer() async {
           print("✅ Flask server is ready.");
           break;
         }
-      } catch (e) {
-        // Server not ready yet
-      }
+      } catch (_) {}
       await Future.delayed(Duration(seconds: 1));
     }
 
@@ -53,7 +54,6 @@ Future<void> startFlaskServer() async {
   }
 }
 
-
 class HeartAttackPredictorApp extends StatelessWidget {
   const HeartAttackPredictorApp({super.key});
 
@@ -61,9 +61,7 @@ class HeartAttackPredictorApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primarySwatch: Colors.red,
-      ),
+      theme: ThemeData(primarySwatch: Colors.red),
       home: PredictorForm(),
     );
   }
@@ -81,9 +79,25 @@ class _PredictorFormState extends State<PredictorForm> {
   final TextEditingController _ageController = TextEditingController();
   final TextEditingController _bpController = TextEditingController();
   final TextEditingController _cholesterolController = TextEditingController();
+
   String? _prediction;
   Map<String, dynamic>? _probabilities;
-  String _statusMessage = "Waiting for server...";
+  String _statusMessage = "Initializing server...";
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeServer();
+  }
+
+  Future<void> _initializeServer() async {
+    await startFlaskServer();
+    setState(() {
+      _statusMessage = isServerRunning
+          ? "✅ Server is ready. You can predict now!"
+          : "❌ Server failed to start. Try restarting the app.";
+    });
+  }
 
   @override
   void dispose() {
@@ -116,20 +130,20 @@ class _PredictorFormState extends State<PredictorForm> {
         setState(() {
           _prediction = data['category'];
           _probabilities = data['probabilities'];
-          _statusMessage = "Prediction received!";
+          _statusMessage = "✅ Prediction received!";
         });
       } else {
         setState(() {
           _prediction = 'Error: ${response.body}';
           _probabilities = null;
-          _statusMessage = "Failed to get prediction!";
+          _statusMessage = "⚠️ Failed to get prediction!";
         });
       }
     } catch (e) {
       setState(() {
         _prediction = null;
         _probabilities = null;
-        _statusMessage = "Failed to connect to server: $e";
+        _statusMessage = "❌ Failed to connect to server: $e";
       });
     }
   }
@@ -192,7 +206,8 @@ class _PredictorFormState extends State<PredictorForm> {
                         prefixIcon: Icon(Icons.cake, color: Colors.red),
                       ),
                       keyboardType: TextInputType.number,
-                      validator: (value) => value!.isEmpty ? 'Enter your age' : null,
+                      validator: (value) =>
+                          value!.isEmpty ? 'Enter your age' : null,
                     ),
                     SizedBox(height: 16),
                     TextFormField(
@@ -230,7 +245,8 @@ class _PredictorFormState extends State<PredictorForm> {
                         }
                       },
                       style: ElevatedButton.styleFrom(
-                        padding: EdgeInsets.symmetric(vertical: 16.0), backgroundColor: Colors.red,
+                        padding: EdgeInsets.symmetric(vertical: 16.0),
+                        backgroundColor: Colors.red,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8.0),
                         ),
