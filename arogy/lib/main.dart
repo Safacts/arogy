@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:file_picker/file_picker.dart';
 
 Process? flaskProcess;
 bool isServerRunning = false;
@@ -22,7 +23,6 @@ Future<void> startFlaskServer() async {
     }
 
     final process = await Process.start(flaskExePath, []);
-
     flaskProcess = process;
 
     process.stdout.transform(utf8.decoder).listen((data) {
@@ -83,7 +83,6 @@ class _PredictorFormState extends State<PredictorForm> {
   String? _prediction;
   Map<String, dynamic>? _probabilities;
   String _statusMessage = "Initializing server...";
-
   bool _isDrawerOpen = false;
 
   @override
@@ -208,10 +207,7 @@ class _PredictorFormState extends State<PredictorForm> {
                 child: Container(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [
-                        Colors.orange.shade100,
-                        Colors.red.shade100
-                      ],
+                      colors: [Colors.orange.shade100, Colors.red.shade100],
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                     ),
@@ -235,18 +231,52 @@ class _PredictorFormState extends State<PredictorForm> {
           ),
           AnimatedPositioned(
             duration: Duration(milliseconds: 300),
-            left: _isDrawerOpen ? 0 : -200,
+            left: _isDrawerOpen ? 0 : -220,
             top: 0,
             bottom: 0,
             child: MouseRegion(
               onExit: (_) => setState(() => _isDrawerOpen = false),
               child: Container(
-                width: 200,
+                width: 220,
                 color: Colors.red.shade100,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     SizedBox(height: 80),
+                    Padding(
+                      padding: const EdgeInsets.all(12.0),
+                      child: Text(
+                        'Upload PNG Image',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                      child: ElevatedButton.icon(
+                        onPressed: () async {
+                          final result = await FilePicker.platform.pickFiles(
+                            type: FileType.custom,
+                            allowedExtensions: ['png'],
+                          );
+                          if (result != null && result.files.single.path != null) {
+                            final filePath = result.files.single.path!;
+                            print("✅ Selected PNG: $filePath");
+                          } else {
+                            print("❌ No PNG selected.");
+                          }
+                        },
+                        icon: Icon(Icons.upload_file),
+                        label: Text("Choose PNG"),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                        ),
+                      ),
+                    ),
+                    Spacer(),
+                    Divider(),
                     ListTile(
                       title: Text("About App"),
                       onTap: _showAboutDialog,
