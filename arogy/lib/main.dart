@@ -149,6 +149,49 @@ class _PredictorFormState extends State<PredictorForm> {
     }
   }
 
+  Future<void> _uploadImageAndExtractData() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['png'],
+    );
+
+    if (result != null && result.files.single.path != null) {
+      final filePath = result.files.single.path!;
+      final file = File(filePath);
+
+      final request = http.MultipartRequest(
+        'POST',
+        Uri.parse('http://127.0.0.1:5000/extract'),
+      );
+      request.files.add(await http.MultipartFile.fromPath('image', file.path));
+
+      try {
+        final streamedResponse = await request.send();
+        final response = await http.Response.fromStream(streamedResponse);
+
+        if (response.statusCode == 200) {
+          final data = jsonDecode(response.body);
+          setState(() {
+            _ageController.text = data['Age'].toString();
+            _bpController.text = data['BloodPressure'].toString();
+            _cholesterolController.text = data['Cholesterol'].toString();
+            _statusMessage = "✅ Data extracted from PNG!";
+          });
+        } else {
+          setState(() {
+            _statusMessage = "❌ Server error: ${response.body}";
+          });
+        }
+      } catch (e) {
+        setState(() {
+          _statusMessage = "❌ Failed to upload image: $e";
+        });
+      }
+    } else {
+      print("❌ No PNG selected.");
+    }
+  }
+
   void _showAboutDialog() {
     showDialog(
       context: context,
@@ -161,7 +204,7 @@ class _PredictorFormState extends State<PredictorForm> {
               thumbVisibility: true,
               child: SingleChildScrollView(
                 child: Text(
-                  '''Heart Attack Risk Predictor\n\nThis application helps assess heart attack risk based on user data like age, BP, and cholesterol.\n\nFeatures:\n- Local ML-based prediction\n- Clean UI\n- Built with Flutter + Python\n\nVersion: 1.0.0\nDeveloped by: Aadi''',
+                  '''Heart Attack Risk Predictor\n\nThis application helps assess heart attack risk based on user data like age, BP, and cholesterol.\n\nFeatures:\n- Local ML-based prediction\n- Image upload & autofill\n- Built with Flutter + Python\n\nVersion: 1.0.0\nDeveloped by: Aadi''',
                   style: TextStyle(fontSize: 16),
                 ),
               ),
@@ -256,18 +299,7 @@ class _PredictorFormState extends State<PredictorForm> {
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 12.0),
                       child: ElevatedButton.icon(
-                        onPressed: () async {
-                          final result = await FilePicker.platform.pickFiles(
-                            type: FileType.custom,
-                            allowedExtensions: ['png'],
-                          );
-                          if (result != null && result.files.single.path != null) {
-                            final filePath = result.files.single.path!;
-                            print("✅ Selected PNG: $filePath");
-                          } else {
-                            print("❌ No PNG selected.");
-                          }
-                        },
+                        onPressed: _uploadImageAndExtractData,
                         icon: Icon(Icons.upload_file),
                         label: Text("Choose PNG"),
                         style: ElevatedButton.styleFrom(
@@ -315,47 +347,11 @@ class _PredictorFormState extends State<PredictorForm> {
             textAlign: TextAlign.center,
           ),
           SizedBox(height: 20),
-          TextFormField(
-            controller: _ageController,
-            decoration: InputDecoration(
-              labelText: 'Age',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8.0),
-              ),
-              prefixIcon: Icon(Icons.cake, color: Colors.red),
-            ),
-            keyboardType: TextInputType.number,
-            validator: (value) =>
-                value!.isEmpty ? 'Enter your age' : null,
-          ),
+          _buildTextField(_ageController, 'Age', Icons.cake),
           SizedBox(height: 16),
-          TextFormField(
-            controller: _bpController,
-            decoration: InputDecoration(
-              labelText: 'Blood Pressure',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8.0),
-              ),
-              prefixIcon: Icon(Icons.favorite, color: Colors.red),
-            ),
-            keyboardType: TextInputType.number,
-            validator: (value) =>
-                value!.isEmpty ? 'Enter your blood pressure' : null,
-          ),
+          _buildTextField(_bpController, 'Blood Pressure', Icons.favorite),
           SizedBox(height: 16),
-          TextFormField(
-            controller: _cholesterolController,
-            decoration: InputDecoration(
-              labelText: 'Cholesterol',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8.0),
-              ),
-              prefixIcon: Icon(Icons.water_drop, color: Colors.red),
-            ),
-            keyboardType: TextInputType.number,
-            validator: (value) =>
-                value!.isEmpty ? 'Enter your cholesterol' : null,
-          ),
+          _buildTextField(_cholesterolController, 'Cholesterol', Icons.water_drop),
           SizedBox(height: 20),
           ElevatedButton(
             onPressed: () {
@@ -396,27 +392,35 @@ class _PredictorFormState extends State<PredictorForm> {
             ),
             Text(
               _prediction!,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w500,
-              ),
+              style: TextStyle(fontSize: 18),
             ),
             if (_probabilities != null)
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: _probabilities!.entries.map((entry) {
-                  return Text(
-                    '${entry.key}: ${(entry.value * 100).toStringAsFixed(2)}%',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey.shade700,
-                    ),
-                  );
-                }).toList(),
+              ..._probabilities!.entries.map(
+                (entry) => Text(
+                  '${entry.key}: ${(entry.value * 100).toStringAsFixed(2)}%',
+                  style: TextStyle(fontSize: 16, color: Colors.grey.shade700),
+                ),
               ),
           ]
         ],
       ),
+    );
+  }
+
+  Widget _buildTextField(
+    TextEditingController controller,
+    String label,
+    IconData icon,
+  ) {
+    return TextFormField(
+      controller: controller,
+      decoration: InputDecoration(
+        labelText: label,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8.0)),
+        prefixIcon: Icon(icon, color: Colors.red),
+      ),
+      keyboardType: TextInputType.number,
+      validator: (value) => value!.isEmpty ? 'Enter your $label' : null,
     );
   }
 }
