@@ -3,36 +3,26 @@ import joblib
 import numpy as np
 from PIL import Image
 import pytesseract
-import io
-
 import os
 import sys
+import re
 
 app = Flask(__name__)
 
-
-
 def resource_path(relative_path):
-    """Get the absolute path to a resource, works for dev and PyInstaller"""
     base_path = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
     return os.path.join(base_path, relative_path)
 
+# Load model and scaler
 model = joblib.load(resource_path('heart_attack_model.pkl'))
 scaler = joblib.load(resource_path('scaler.pkl'))
-
-# # Load the model and scaler
-# model = joblib.load('assets/heart_attack_model.pkl')
-# scaler = joblib.load('assets/scaler.pkl')
 
 @app.route('/predict', methods=['POST'])
 def predict():
     try:
         data = request.json
-        # Extract features
         features = np.array([data['Age'], data['BloodPressure'], data['Cholesterol']]).reshape(1, -1)
-        # Scale the input
         scaled_features = scaler.transform(features)
-        # Get predictions and probabilities
         probabilities = model.predict_proba(scaled_features)[0]
         category = probabilities.argmax()
         category_label = ['Low Risk', 'Medium Risk', 'High Risk'][category]
@@ -47,7 +37,6 @@ def predict():
     except Exception as e:
         return jsonify({'error': str(e)}), 400
 
-# 🔥 NEW: Extract data from PNG image report
 @app.route('/extract', methods=['POST'])
 def extract():
     if 'image' not in request.files:
@@ -56,32 +45,48 @@ def extract():
     image_file = request.files['image']
     image = Image.open(image_file.stream)
 
-    # Use pytesseract to extract text
-    text = pytesseract.image_to_string(image)
-
-    # Debug print
+    # Run OCR
+    text = pytesseract.image_to_string(image, config='--psm 6')
     print("OCR Text Output:\n", text)
 
-    # Basic parsing logic (customize to match your image format)
-    age, bp, chol = None, None, None
+    # Cleaned text for email search
+    cleaned_text = ' '.join(text.split())
+
+    # Initialize fields
+    age, bp, chol, email = None, None, None, None
+
+    # Line-by-line search for fields
     for line in text.splitlines():
-        lower = line.lower()
-        if 'age' in lower:
-            age = ''.join(filter(str.isdigit, line))
-        elif 'blood pressure' in lower or 'bp' in lower:
-            bp = ''.join(filter(str.isdigit, line))
-        elif 'cholesterol' in lower:
-            chol = ''.join(filter(str.isdigit, line))
+        line = line.strip()
+        if re.search(r'\bage\b', line, re.IGNORECASE):
+            age_match = re.search(r'(\d+)', line)
+            if age_match:
+                age = age_match.group(1)
+        elif re.search(r'blood pressure|bp', line, re.IGNORECASE):
+            bp_match = re.search(r'(\d+)', line)
+            if bp_match:
+                bp = bp_match.group(1)
+        elif re.search(r'cholesterol', line, re.IGNORECASE):
+            chol_match = re.search(r'(\d+)', line)
+            if chol_match:
+                chol = chol_match.group(1)
+
+    # Email from cleaned flat text
+    email_match = re.search(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', cleaned_text)
+    if email_match:
+        email = email_match.group(0)
 
     # Fallbacks
     age = int(age) if age else 50
     bp = int(bp) if bp else 120
     chol = int(chol) if chol else 200
+    email = email if email else "Not found"
 
     return jsonify({
         'Age': age,
         'BloodPressure': bp,
-        'Cholesterol': chol
+        'Cholesterol': chol,
+        'Email': email
     })
 
 if __name__ == '__main__':

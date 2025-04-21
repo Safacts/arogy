@@ -79,7 +79,7 @@ class _PredictorFormState extends State<PredictorForm> {
   final TextEditingController _ageController = TextEditingController();
   final TextEditingController _bpController = TextEditingController();
   final TextEditingController _cholesterolController = TextEditingController();
-  final TextEditingController _emailController = TextEditingController(); // <-- Email field
+  final TextEditingController _emailController = TextEditingController();
 
   String? _prediction;
   Map<String, dynamic>? _probabilities;
@@ -171,10 +171,21 @@ class _PredictorFormState extends State<PredictorForm> {
 
         if (response.statusCode == 200) {
           final data = jsonDecode(response.body);
+
+          final extractedEmail = data['Email'];
+          print("📧 Extracted email: $extractedEmail");
+
           setState(() {
             _ageController.text = data['Age'].toString();
             _bpController.text = data['BloodPressure'].toString();
             _cholesterolController.text = data['Cholesterol'].toString();
+
+            if (extractedEmail != null &&
+                extractedEmail.toString().isNotEmpty &&
+                extractedEmail.toString().toLowerCase() != 'not found') {
+              _emailController.text = extractedEmail.toString();
+            }
+
             _statusMessage = "✅ Data extracted from PNG!";
           });
         } else {
@@ -353,7 +364,7 @@ class _PredictorFormState extends State<PredictorForm> {
           SizedBox(height: 16),
           _buildTextField(_cholesterolController, 'Cholesterol', Icons.water_drop),
           SizedBox(height: 16),
-          _buildEmailField(), // <-- Added email field
+          _buildEmailField(),
           SizedBox(height: 20),
           ElevatedButton(
             onPressed: () {
