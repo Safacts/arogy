@@ -11,6 +11,7 @@ def load_csv_data(filename="health_data.csv"):
         for row in reader:
             data.append({
                 "Name": row["Name"],
+                "Email": row["Email"],
                 "Age": int(row["Age"]),
                 "BloodPressure": int(row["BloodPressure"]),
                 "Cholesterol": int(row["Cholesterol"]),
@@ -58,9 +59,10 @@ def create_health_report_image(person, output_dir="reports"):
     draw.text((margin + 20, section_top + 20), "Patient Information", font=section_font, fill="#000000")
 
     # Patient details
-    labels = ["Name", "Age", "Blood Pressure", "Cholesterol"]
+    labels = ["Name", "Email", "Age", "Blood Pressure", "Cholesterol"]
     values = [
         person["Name"],
+        person["Email"],
         f"{person['Age']} years",
         f"{person['BloodPressure']} mmHg",
         f"{person['Cholesterol']} mg/dL"
@@ -89,7 +91,7 @@ def create_health_report_image(person, output_dir="reports"):
 
 # Main function
 def generate_reports():
-    data = load_csv_data("health_data.csv")
+    data = load_csv_data("csvGenerator/health_data.csv")
     for person in data:
         create_health_report_image(person)
 
