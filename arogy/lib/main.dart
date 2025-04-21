@@ -79,6 +79,7 @@ class _PredictorFormState extends State<PredictorForm> {
   final TextEditingController _ageController = TextEditingController();
   final TextEditingController _bpController = TextEditingController();
   final TextEditingController _cholesterolController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController(); // <-- Email field
 
   String? _prediction;
   Map<String, dynamic>? _probabilities;
@@ -156,8 +157,7 @@ class _PredictorFormState extends State<PredictorForm> {
     );
 
     if (result != null && result.files.single.path != null) {
-      final filePath = result.files.single.path!;
-      final file = File(filePath);
+      final file = File(result.files.single.path!);
 
       final request = http.MultipartRequest(
         'POST',
@@ -352,6 +352,8 @@ class _PredictorFormState extends State<PredictorForm> {
           _buildTextField(_bpController, 'Blood Pressure', Icons.favorite),
           SizedBox(height: 16),
           _buildTextField(_cholesterolController, 'Cholesterol', Icons.water_drop),
+          SizedBox(height: 16),
+          _buildEmailField(), // <-- Added email field
           SizedBox(height: 20),
           ElevatedButton(
             onPressed: () {
@@ -421,6 +423,27 @@ class _PredictorFormState extends State<PredictorForm> {
       ),
       keyboardType: TextInputType.number,
       validator: (value) => value!.isEmpty ? 'Enter your $label' : null,
+    );
+  }
+
+  Widget _buildEmailField() {
+    return TextFormField(
+      controller: _emailController,
+      decoration: InputDecoration(
+        labelText: 'Email (optional)',
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8.0)),
+        prefixIcon: Icon(Icons.email, color: Colors.red),
+      ),
+      keyboardType: TextInputType.emailAddress,
+      validator: (value) {
+        if (value != null && value.isNotEmpty) {
+          final emailRegex = RegExp(r'^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$');
+          if (!emailRegex.hasMatch(value)) {
+            return 'Enter a valid email address';
+          }
+        }
+        return null;
+      },
     );
   }
 }
