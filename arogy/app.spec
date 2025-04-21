@@ -1,12 +1,21 @@
 # -*- mode: python ; coding: utf-8 -*-
 
-
 a = Analysis(
     ['app.py'],
     pathex=[],
     binaries=[],
-    datas=[],
-    hiddenimports=[],
+    datas=[
+        ('assets/heart_attack_model.pkl', '.'),
+        ('assets/scaler.pkl', '.'),
+    ],
+    hiddenimports=[
+        'sklearn',
+        'sklearn.linear_model',
+        'sklearn.preprocessing',
+        'scipy.sparse',
+        'sklearn.utils._typedefs',
+        'sklearn.utils._bunch'
+    ],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -14,31 +23,26 @@ a = Analysis(
     noarchive=False,
     optimize=0,
 )
+
 pyz = PYZ(a.pure)
 
 exe = EXE(
     pyz,
     a.scripts,
+    a.binaries,
+    a.datas,
     [],
-    exclude_binaries=True,
     name='app',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
+    upx_exclude=[],
+    runtime_tmpdir=None,
     console=True,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-)
-coll = COLLECT(
-    exe,
-    a.binaries,
-    a.datas,
-    strip=False,
-    upx=True,
-    upx_exclude=[],
-    name='app',
 )

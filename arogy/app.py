@@ -5,11 +5,24 @@ from PIL import Image
 import pytesseract
 import io
 
+import os
+import sys
+
 app = Flask(__name__)
 
-# Load the model and scaler
-model = joblib.load('assets/heart_attack_model.pkl')
-scaler = joblib.load('assets/scaler.pkl')
+
+
+def resource_path(relative_path):
+    """Get the absolute path to a resource, works for dev and PyInstaller"""
+    base_path = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
+    return os.path.join(base_path, relative_path)
+
+model = joblib.load(resource_path('heart_attack_model.pkl'))
+scaler = joblib.load(resource_path('scaler.pkl'))
+
+# # Load the model and scaler
+# model = joblib.load('assets/heart_attack_model.pkl')
+# scaler = joblib.load('assets/scaler.pkl')
 
 @app.route('/predict', methods=['POST'])
 def predict():
