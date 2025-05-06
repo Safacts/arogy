@@ -610,35 +610,64 @@ Future<void> _getPrediction() async {
     }
   }
 
-  void _showAboutDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text("About App"),
-          content: SizedBox(
-            width: double.maxFinite,
-            child: Scrollbar(
-              thumbVisibility: true,
-              child: SingleChildScrollView(
-                child: Text(
-                  '''Heart Attack Risk Predictor\n\nThis application helps assess heart attack risk based on user data like age, BP, and cholesterol.\n\nFeatures:\n- Local ML-based prediction\n- Image upload & autofill\n- Built with Flutter + Python\n\nVersion: 1.0.0\nDeveloped by: Aadi''',
-                  style: TextStyle(fontSize: 16),
-                ),
+  // void _showAboutDialog() {
+  //   showDialog(
+  //     context: context,
+  //     builder: (BuildContext context) {
+  //       return AlertDialog(
+  //         title: Text("About App"),
+  //         content: SizedBox(
+  //           width: double.maxFinite,
+  //           child: Scrollbar(
+  //             thumbVisibility: true,
+  //             child: SingleChildScrollView(
+  //               child: Text(
+  //                 '''Heart Attack Risk Predictor\n\nThis application helps assess heart attack risk based on user data like age, BP, and cholesterol.\n\nFeatures:\n- Local ML-based prediction\n- Image upload & autofill\n- Built with Flutter + Python\n\nVersion: 1.0.0\nDeveloped by: Aadi''',
+  //                 style: TextStyle(fontSize: 16),
+  //               ),
+  //             ),
+  //           ),
+  //         ),
+  //         actions: [
+  //           TextButton(
+  //             onPressed: () => Navigator.of(context).pop(),
+  //             child: Text("Close"),
+  //           ),
+  //         ],
+  //       );
+  //     },
+  //   );
+  // }
+
+void _showAboutDialog() {
+  showDialog(
+    context: context,
+    barrierDismissible: true, // Allows closing by tapping outside
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: Text("About App"),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: Scrollbar(
+            thumbVisibility: true,
+            child: SingleChildScrollView(
+              child: Text(
+                '''Heart Attack Risk Predictor\n\nThis application helps assess heart attack risk based on user data like age, BP, and cholesterol.\n\nFeatures:\n- Local ML-based prediction\n- Image upload & autofill\n- Built with Flutter + Python\n\nVersion: 1.0.0\nDeveloped by: Aadi''',
+                style: TextStyle(fontSize: 16),
               ),
             ),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text("Close"),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(), // Close dialog
+            child: Text("Close"),
+          ),
+        ],
+      );
+    },
+  );
+}
   void _toggleDrawer() {
     setState(() {
       _isDrawerOpen = !_isDrawerOpen;
@@ -647,108 +676,117 @@ Future<void> _getPrediction() async {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Stack(
-        children: [
-          Column(
-            children: [
-              AppBar(
-                title: Text('Heart Attack Risk Predictor'),
-                centerTitle: true,
-                backgroundColor: Colors.red,
-                leading: MouseRegion(
-                  onEnter: (_) => _toggleDrawer(),
-                  child: IconButton(
+    return GestureDetector(
+      onTap: () {
+        if (_isDrawerOpen) {
+          setState(() {
+            _isDrawerOpen = false;
+          });
+        }
+      },
+      child: Scaffold(
+        body: Stack(
+          children: [
+            Column(
+              children: [
+                AppBar(
+                  title: Text('Heart Attack Risk Predictor'),
+                  centerTitle: true,
+                  backgroundColor: Colors.red,
+                  leading: IconButton(
                     icon: Icon(Icons.menu),
                     onPressed: _toggleDrawer,
                   ),
                 ),
-              ),
-              Expanded(
+                Expanded(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Colors.orange.shade100, Colors.red.shade100],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      ),
+                    ),
+                    padding: const EdgeInsets.all(16.0),
+                    child: SingleChildScrollView(
+                      child: Card(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16.0),
+                        ),
+                        elevation: 8.0,
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: _buildForm(),
+                        ),
+                      ),
+                    ),
+                  ),
+                )
+              ],
+            ),
+            AnimatedPositioned(
+              duration: Duration(milliseconds: 300),
+              left: _isDrawerOpen ? 0 : -220,
+              top: 0,
+              bottom: 0,
+              child: GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _isDrawerOpen = false;
+                  });
+                },
                 child: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Colors.orange.shade100, Colors.red.shade100],
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                    ),
-                  ),
-                  padding: const EdgeInsets.all(16.0),
-                  child: SingleChildScrollView(
-                    child: Card(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16.0),
-                      ),
-                      elevation: 8.0,
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: _buildForm(),
-                      ),
-                    ),
-                  ),
-                ),
-              )
-            ],
-          ),
-          AnimatedPositioned(
-            duration: Duration(milliseconds: 300),
-            left: _isDrawerOpen ? 0 : -220,
-            top: 0,
-            bottom: 0,
-            child: MouseRegion(
-              onExit: (_) => setState(() => _isDrawerOpen = false),
-              child: Container(
-                width: 220,
-                color: Colors.red.shade100,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SizedBox(height: 80),
-                    Padding(
-                      padding: const EdgeInsets.all(12.0),
-                      child: Text(
-                        'Upload PNG Image',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                  width: 220,
+                  color: Colors.red.shade100,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(height: 80),
+                      Padding(
+                        padding: const EdgeInsets.all(12.0),
+                        child: Text(
+                          'Upload PNG Image',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
                         ),
                       ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12.0),
-                      child: ElevatedButton.icon(
-                        onPressed: _uploadImageAndExtractData,
-                        icon: Icon(Icons.upload_file),
-                        label: Text("Choose PNG"),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red,
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                        child: ElevatedButton.icon(
+                          onPressed: _uploadImageAndExtractData,
+                          icon: Icon(Icons.upload_file),
+                          label: Text("Choose PNG"),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red,
+                          ),
                         ),
                       ),
-                    ),
-                    Spacer(),
-                    Divider(),
-                    ListTile(
-                      title: Text("About App"),
-                      onTap: _showAboutDialog,
-                    ),
-                    ListTile(title: Text("Version 1.0")),
-                    ListTile(
-                      title: Text("Exit"),
-                      onTap: () {
-                        flaskProcess?.kill();
-                        exit(0);
-                      },
-                    ),
-                  ],
+                      Spacer(),
+                      Divider(),
+                      ListTile(
+                        title: Text("About App"),
+                        onTap: _showAboutDialog,
+                      ),
+                      ListTile(title: Text("Version 1.0")),
+                      ListTile(
+                        title: Text("Exit"),
+                        onTap: () {
+                          flaskProcess?.kill();
+                          exit(0);
+                        },
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
-
   Widget _buildForm() {
     return Form(
       key: _formKey,

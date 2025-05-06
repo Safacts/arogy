@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Heart Attack Predictor</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; max-width: 600px; margin: auto; }
+    input, button { padding: 10px; margin: 10px 0; width: 100%; box-sizing: border-box; }
+    button { background: crimson; color: white; border: none; cursor: pointer; }
+    .status { margin-top: 20px; font-weight: bold; }
+    .probabilities { margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <h2>Heart Attack Predictor</h2>
+  
+  <input type="number" id="age" placeholder="Enter Age" />
+  <input type="number" id="bp" placeholder="Enter Blood Pressure" />
+  <input type="number" id="cholesterol" placeholder="Enter Cholesterol" />
+  <input type="email" id="email" placeholder="Enter Email (optional)" />
+  
+  <button onclick="getPrediction()">Predict</button>
+  
+  <div class="status" id="status">Checking server...</div>
+  <div id="prediction"></div>
+  <div id="probabilities" class="probabilities"></div>
+
+  <script>
+    const hostedFlaskURL = "https://arogy.onrender.com/predict";
+    const serverStatusURL = "https://arogy.onrender.com/";  // Flask server root
+
+    const supabaseURL = "https://rsefkfixakbuqxqtsfww.supabase.co";
+    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJzZWZrZml4YWtidXF4cXRzZnd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUyMjc0NDcsImV4cCI6MjA2MDgwMzQ0N30.y4RUJCw5xhpVBbRToZIZ-Jg7jJBlUKg_pMO41VP-1BU";
+
+    window.onload = async () => {
+      try {
+        const res = await fetch(serverStatusURL);
+        document.getElementById('status').textContent =
+          res.ok ? "✅ Server is ready!" : "❌ Server not available.";
+      } catch (e) {
+        document.getElementById('status').textContent = "❌ Failed to connect to server.";
+      }
+    };
+
+    function getDerivedFeatures(age, bp, cholesterol) {
+      const ageGroup = age < 40 ? "Young" : age <= 60 ? "Middle-aged" : "Senior";
+      const bpLevel = bp < 80 ? "Low" : bp <= 120 ? "Normal" : "High";
+      const cholesterolLevel = cholesterol < 150 ? "Low" : cholesterol <= 240 ? "Normal" : "High";
+      const bpToAgeRatio = bp / age;
+      const cholesterolToAgeRatio = cholesterol / age;
+      const combinedRiskIndex = (bpToAgeRatio + cholesterolToAgeRatio) / 2;
+      return { ageGroup, bpLevel, cholesterolLevel, bpToAgeRatio, cholesterolToAgeRatio, combinedRiskIndex };
+    }
+
+    async function getPrediction() {
+      const age = parseInt(document.getElementById("age").value);
+      const bp = parseInt(document.getElementById("bp").value);
+      const cholesterol = parseInt(document.getElementById("cholesterol").value);
+      const email = document.getElementById("email").value.trim();
+
+      if (isNaN(age) || isNaN(bp) || isNaN(cholesterol)) {
+        alert("Please fill in all required fields.");
+        return;
+      }
+
+      const {
+        ageGroup,
+        bpLevel,
+        cholesterolLevel,
+        bpToAgeRatio,
+        cholesterolToAgeRatio,
+        combinedRiskIndex
+      } = getDerivedFeatures(age, bp, cholesterol);
+
+      const payload = {
+        Age: age,
+        BloodPressure: bp,
+        Cholesterol: cholesterol,
+        Age_Group: ageGroup,
+        BP_Level: bpLevel,
+        Cholesterol_Level: cholesterolLevel,
+        BP_to_Age_Ratio: bpToAgeRatio,
+        Cholesterol_to_Age_Ratio: cholesterolToAgeRatio,
+        Combined_Risk_Index: combinedRiskIndex
+      };
+
+      document.getElementById('status').textContent = "⏳ Sending to server...";
+      document.getElementById('prediction').textContent = '';
+      document.getElementById('probabilities').textContent = '';
+
+      try {
+        const response = await fetch(hostedFlaskURL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const prediction = data.category;
+          const probabilities = data.probabilities;
+
+          document.getElementById("prediction").textContent = `🧠 Prediction: ${prediction}`;
+          document.getElementById("probabilities").innerHTML =
+            Object.entries(probabilities).map(([k, v]) => `<div>${k}: ${(v * 100).toFixed(2)}%</div>`).join("");
+
+          document.getElementById("status").textContent = "✅ Prediction received!";
+
+          if (email !== "") {
+            await insertToSupabase({ age, bp, cholesterol, email, prediction });
+          }
+        } else {
+          const error = await response.text();
+          document.getElementById("status").textContent = `❌ Error: ${error}`;
+        }
+      } catch (err) {
+        console.error(err);
+        document.getElementById("status").textContent = "❌ Failed to connect to Flask server.";
+      }
+    }
+
+    async function insertToSupabase({ age, bp, cholesterol, email, prediction }) {
+      const tableName = "predictions";
+
+      const record = {
+        email,
+        age,
+        blood_pressure: bp,
+        cholesterol,
+        result: prediction,
+        created_at: new Date().toISOString(),
+      };
+
+      try {
+        const response = await fetch(`${supabaseURL}/rest/v1/${tableName}`, {
+          method: "POST",
+          headers: {
+            "apikey": supabaseKey,
+            "Authorization": `Bearer ${supabaseKey}`,
+            "Content-Type": "application/json",
+            "Prefer": "return=representation"
+          },
+          body: JSON.stringify(record)
+        });
+
+        if (response.status === 201) {
+          console.log("✅ Inserted into Supabase.");
+        } else {
+          console.warn("❌ Supabase insert failed:", await response.text());
+        }
+      } catch (e) {
+        console.error("❌ Supabase error:", e);
+      }
+    }
+  </script>
+</body>
+</html>
