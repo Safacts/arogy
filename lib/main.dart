@@ -56,19 +56,20 @@ void main() {
 // }
 
 Future<void> startFlaskServer() async {
-  try {
+  if (Platform.isWindows) {
+    // 🔍 Look for the local Flask EXE on Windows
     final executablePath = Platform.resolvedExecutable;
     final currentDir = File(executablePath).parent.parent.path;
     final flaskExePath = '$currentDir\\dist\\app.exe';
 
-    // 👉 Add this line to see the full path
-    print("Looking for Flask at: $flaskExePath");
+    print("🧪 Looking for Flask EXE at: $flaskExePath");
 
     if (!File(flaskExePath).existsSync()) {
       print("❌ Flask server .exe not found at: $flaskExePath");
       return;
     }
 
+    // 🚀 Start the EXE
     final process = await Process.start(flaskExePath, []);
     flaskProcess = process;
 
@@ -80,13 +81,14 @@ Future<void> startFlaskServer() async {
       print('Flask stderr: $data');
     });
 
+    // ⏳ Wait for it to become responsive
     const maxRetries = 10;
     for (int i = 0; i < maxRetries; i++) {
       try {
         final response = await http.get(Uri.parse('http://127.0.0.1:5000'));
         if (response.statusCode == 200 || response.statusCode == 404) {
           isServerRunning = true;
-          print("✅ Flask server is ready.");
+          print("✅ Flask EXE server is ready.");
           break;
         }
       } catch (_) {}
@@ -94,13 +96,29 @@ Future<void> startFlaskServer() async {
     }
 
     if (!isServerRunning) {
-      print("❌ Flask server failed to start in time.");
+      print("❌ Flask EXE server failed to start in time.");
     }
-  } catch (e) {
-    print('Error starting Flask server: $e');
+  } else if (Platform.isAndroid) {
+    // 🌐 Use the hosted Flask server on Render for Android
+    const hostedUrl = 'https://arogy.onrender.com';
+
+    print("🔗 Checking hosted server at $hostedUrl");
+
+    try {
+      final response = await http.get(Uri.parse('$hostedUrl/'));
+      if (response.statusCode == 200 || response.statusCode == 404) {
+        isServerRunning = true;
+        print("✅ Connected to hosted Flask API.");
+      } else {
+        print("❌ Unexpected status from hosted API: ${response.statusCode}");
+      }
+    } catch (e) {
+      print("❌ Error connecting to hosted API: $e");
+    }
+  } else {
+    print("❌ Unsupported platform: ${Platform.operatingSystem}");
   }
 }
-
 
 class HeartAttackPredictorApp extends StatelessWidget {
   const HeartAttackPredictorApp({super.key});
@@ -306,121 +324,237 @@ class _PredictorFormState extends State<PredictorForm> {
 
 final Uuid uuid = Uuid(); // Create UUID generator
 
+// Future<void> _getPrediction() async {
+//     if (!isServerRunning) {
+//       setState(() {
+//         _statusMessage = "Server is not yet ready. Please try again later.";
+//       });
+//       return;
+//     }
+
+//     try {
+//       final int age = int.parse(_ageController.text);
+//       final int bp = int.parse(_bpController.text);
+//       final int cholesterol = int.parse(_cholesterolController.text);
+
+//       // Derived features
+//       String ageGroup = age < 40 ? "Young" : age <= 60 ? "Middle-aged" : "Senior";
+//       String bpLevel = bp < 80 ? "Low" : bp <= 120 ? "Normal" : "High";
+//       String cholesterolLevel = cholesterol < 150 ? "Low" : cholesterol <= 240 ? "Normal" : "High";
+//       double bpToAgeRatio = bp / age;
+//       double cholesterolToAgeRatio = cholesterol / age;
+//       double combinedRiskIndex = (bpToAgeRatio + cholesterolToAgeRatio) / 2;
+
+//       // Step 1: Send request to Flask server
+//       final url = Uri.parse('http://127.0.0.1:5000/predict');
+//       final response = await http.post(
+//         url,
+//         headers: {'Content-Type': 'application/json'},
+//         body: jsonEncode({
+//           'Age': age,
+//           'BloodPressure': bp,
+//           'Cholesterol': cholesterol,
+//           'Age_Group': ageGroup,
+//           'BP_Level': bpLevel,
+//           'Cholesterol_Level': cholesterolLevel,
+//           'BP_to_Age_Ratio': bpToAgeRatio,
+//           'Cholesterol_to_Age_Ratio': cholesterolToAgeRatio,
+//           'Combined_Risk_Index': combinedRiskIndex,
+//         }),
+//       );
+
+//       if (response.statusCode == 200) {
+//         final data = jsonDecode(response.body);
+//         final category = data['category'];
+//         final probabilities = data['probabilities'];
+
+//         setState(() {
+//           _prediction = category;
+//           _probabilities = probabilities;
+//           _statusMessage = "✅ Prediction received!";
+//         });
+
+//         // Step 2: Insert into Supabase if email is entered
+//         final email = _emailController.text.trim();
+//         if (email.isNotEmpty) {
+//           final supabaseUrl = 'https://rsefkfixakbuqxqtsfww.supabase.co';
+//           final supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJzZWZrZml4YWtidXF4cXRzZnd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUyMjc0NDcsImV4cCI6MjA2MDgwMzQ0N30.y4RUJCw5xhpVBbRToZIZ-Jg7jJBlUKg_pMO41VP-1BU'; // Replace with full anon key
+//           final tableName = 'predictions';
+
+//           // Check Supabase connectivity
+//           final healthCheckResponse = await http.get(
+//             Uri.parse('$supabaseUrl/rest/v1/$tableName?limit=1'),
+//             headers: {
+//               'apikey': supabaseKey,
+//               'Authorization': 'Bearer $supabaseKey',
+//             },
+//           );
+
+//           if (healthCheckResponse.statusCode == 200) {
+//             // Generate UUID for id
+//             final id = uuid.v4();
+
+//             // Insert into Supabase
+//             final supabaseResponse = await http.post(
+//               Uri.parse('$supabaseUrl/rest/v1/$tableName'),
+//               headers: {
+//                 'apikey': supabaseKey,
+//                 'Authorization': 'Bearer $supabaseKey',
+//                 'Content-Type': 'application/json',
+//                 'Prefer': 'return=representation',
+//               },
+//               body: jsonEncode({
+//                 'id': id,
+//                 'email': email,
+//                 'age': age,
+//                 'blood_pressure': bp,
+//                 'cholesterol': cholesterol,
+//                 'result': category,
+//                 'created_at': DateTime.now().toIso8601String(),
+//               }),
+//             );
+
+//             if (supabaseResponse.statusCode == 201) {
+//               print("✅ Data inserted into Supabase");
+//             } else {
+//               print("❌ Supabase insert error: ${supabaseResponse.body}");
+//             }
+//           } else {
+//             print("⚠️ Supabase not reachable or unauthorized: ${healthCheckResponse.body}");
+//           }
+//         }
+
+//       } else {
+//         setState(() {
+//           _prediction = 'Error: ${response.body}';
+//           _probabilities = null;
+//           _statusMessage = "⚠️ Failed to get prediction!";
+//         });
+//       }
+//     } catch (e) {
+//       setState(() {
+//         _prediction = null;
+//         _probabilities = null;
+//         _statusMessage = "❌ Failed to connect to server: $e";
+//       });
+//     }
+//   }
+
 Future<void> _getPrediction() async {
-    if (!isServerRunning) {
+  if (!isServerRunning) {
+    setState(() {
+      _statusMessage = "Server is not yet ready. Please try again later.";
+    });
+    return;
+  }
+
+  try {
+    final int age = int.parse(_ageController.text);
+    final int bp = int.parse(_bpController.text);
+    final int cholesterol = int.parse(_cholesterolController.text);
+
+    // Derived features
+    String ageGroup = age < 40 ? "Young" : age <= 60 ? "Middle-aged" : "Senior";
+    String bpLevel = bp < 80 ? "Low" : bp <= 120 ? "Normal" : "High";
+    String cholesterolLevel = cholesterol < 150 ? "Low" : cholesterol <= 240 ? "Normal" : "High";
+    double bpToAgeRatio = bp / age;
+    double cholesterolToAgeRatio = cholesterol / age;
+    double combinedRiskIndex = (bpToAgeRatio + cholesterolToAgeRatio) / 2;
+
+    // Determine server URL based on platform
+    final Uri url = Platform.isAndroid
+        ? Uri.parse('https://arogy.onrender.com/predict') // Hosted server for Android
+        : Uri.parse('http://127.0.0.1:5000/predict'); // Local server for others
+
+    // Step 1: Send request to Flask server
+    final response = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'Age': age,
+        'BloodPressure': bp,
+        'Cholesterol': cholesterol,
+        'Age_Group': ageGroup,
+        'BP_Level': bpLevel,
+        'Cholesterol_Level': cholesterolLevel,
+        'BP_to_Age_Ratio': bpToAgeRatio,
+        'Cholesterol_to_Age_Ratio': cholesterolToAgeRatio,
+        'Combined_Risk_Index': combinedRiskIndex,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      final category = data['category'];
+      final probabilities = data['probabilities'];
+
       setState(() {
-        _statusMessage = "Server is not yet ready. Please try again later.";
+        _prediction = category;
+        _probabilities = probabilities;
+        _statusMessage = "✅ Prediction received!";
       });
-      return;
-    }
 
-    try {
-      final int age = int.parse(_ageController.text);
-      final int bp = int.parse(_bpController.text);
-      final int cholesterol = int.parse(_cholesterolController.text);
+      // Step 2: Insert into Supabase if email is entered
+      final email = _emailController.text.trim();
+      if (email.isNotEmpty) {
+        final supabaseUrl = 'https://rsefkfixakbuqxqtsfww.supabase.co';
+        final supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJzZWZrZml4YWtidXF4cXRzZnd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUyMjc0NDcsImV4cCI6MjA2MDgwMzQ0N30.y4RUJCw5xhpVBbRToZIZ-Jg7jJBlUKg_pMO41VP-1BU'; // Replace with full anon key
+        final tableName = 'predictions';
 
-      // Derived features
-      String ageGroup = age < 40 ? "Young" : age <= 60 ? "Middle-aged" : "Senior";
-      String bpLevel = bp < 80 ? "Low" : bp <= 120 ? "Normal" : "High";
-      String cholesterolLevel = cholesterol < 150 ? "Low" : cholesterol <= 240 ? "Normal" : "High";
-      double bpToAgeRatio = bp / age;
-      double cholesterolToAgeRatio = cholesterol / age;
-      double combinedRiskIndex = (bpToAgeRatio + cholesterolToAgeRatio) / 2;
+        final healthCheckResponse = await http.get(
+          Uri.parse('$supabaseUrl/rest/v1/$tableName?limit=1'),
+          headers: {
+            'apikey': supabaseKey,
+            'Authorization': 'Bearer $supabaseKey',
+          },
+        );
 
-      // Step 1: Send request to Flask server
-      final url = Uri.parse('http://127.0.0.1:5000/predict');
-      final response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'Age': age,
-          'BloodPressure': bp,
-          'Cholesterol': cholesterol,
-          'Age_Group': ageGroup,
-          'BP_Level': bpLevel,
-          'Cholesterol_Level': cholesterolLevel,
-          'BP_to_Age_Ratio': bpToAgeRatio,
-          'Cholesterol_to_Age_Ratio': cholesterolToAgeRatio,
-          'Combined_Risk_Index': combinedRiskIndex,
-        }),
-      );
+        if (healthCheckResponse.statusCode == 200) {
+          final id = uuid.v4();
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final category = data['category'];
-        final probabilities = data['probabilities'];
-
-        setState(() {
-          _prediction = category;
-          _probabilities = probabilities;
-          _statusMessage = "✅ Prediction received!";
-        });
-
-        // Step 2: Insert into Supabase if email is entered
-        final email = _emailController.text.trim();
-        if (email.isNotEmpty) {
-          final supabaseUrl = 'https://rsefkfixakbuqxqtsfww.supabase.co';
-          final supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJzZWZrZml4YWtidXF4cXRzZnd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUyMjc0NDcsImV4cCI6MjA2MDgwMzQ0N30.y4RUJCw5xhpVBbRToZIZ-Jg7jJBlUKg_pMO41VP-1BU'; // Replace with full anon key
-          final tableName = 'predictions';
-
-          // Check Supabase connectivity
-          final healthCheckResponse = await http.get(
-            Uri.parse('$supabaseUrl/rest/v1/$tableName?limit=1'),
+          final supabaseResponse = await http.post(
+            Uri.parse('$supabaseUrl/rest/v1/$tableName'),
             headers: {
               'apikey': supabaseKey,
               'Authorization': 'Bearer $supabaseKey',
+              'Content-Type': 'application/json',
+              'Prefer': 'return=representation',
             },
+            body: jsonEncode({
+              'id': id,
+              'email': email,
+              'age': age,
+              'blood_pressure': bp,
+              'cholesterol': cholesterol,
+              'result': category,
+              'created_at': DateTime.now().toIso8601String(),
+            }),
           );
 
-          if (healthCheckResponse.statusCode == 200) {
-            // Generate UUID for id
-            final id = uuid.v4();
-
-            // Insert into Supabase
-            final supabaseResponse = await http.post(
-              Uri.parse('$supabaseUrl/rest/v1/$tableName'),
-              headers: {
-                'apikey': supabaseKey,
-                'Authorization': 'Bearer $supabaseKey',
-                'Content-Type': 'application/json',
-                'Prefer': 'return=representation',
-              },
-              body: jsonEncode({
-                'id': id,
-                'email': email,
-                'age': age,
-                'blood_pressure': bp,
-                'cholesterol': cholesterol,
-                'result': category,
-                'created_at': DateTime.now().toIso8601String(),
-              }),
-            );
-
-            if (supabaseResponse.statusCode == 201) {
-              print("✅ Data inserted into Supabase");
-            } else {
-              print("❌ Supabase insert error: ${supabaseResponse.body}");
-            }
+          if (supabaseResponse.statusCode == 201) {
+            print("✅ Data inserted into Supabase");
           } else {
-            print("⚠️ Supabase not reachable or unauthorized: ${healthCheckResponse.body}");
+            print("❌ Supabase insert error: ${supabaseResponse.body}");
           }
+        } else {
+          print("⚠️ Supabase not reachable or unauthorized: ${healthCheckResponse.body}");
         }
-
-      } else {
-        setState(() {
-          _prediction = 'Error: ${response.body}';
-          _probabilities = null;
-          _statusMessage = "⚠️ Failed to get prediction!";
-        });
       }
-    } catch (e) {
+    } else {
       setState(() {
-        _prediction = null;
+        _prediction = 'Error: ${response.body}';
         _probabilities = null;
-        _statusMessage = "❌ Failed to connect to server: $e";
+        _statusMessage = "⚠️ Failed to get prediction!";
       });
     }
+  } catch (e) {
+    setState(() {
+      _prediction = null;
+      _probabilities = null;
+      _statusMessage = "❌ Failed to connect to server: $e";
+    });
   }
+}
 
 
   Future<void> _uploadImageAndExtractData() async {
