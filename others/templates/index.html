@@ -193,11 +193,12 @@
         display: flex;
         flex-direction: column;  /* Stack items vertically */
         gap: 10px;  /* Adds space between the buttons */
-        width: 350px;  /* Makes sure the buttons take up the full width */
+        width: 100%;  /* Makes sure the buttons take up the full width */
+        max-width: 100%;
     }
     
     .buttons a {
-        display: block;  /* Ensure the links take up full width */
+        display: inline-block;  /* Ensure the links take up full width */
         text-align: center;
         background-color: #000000;
         color: white;
@@ -305,7 +306,7 @@
     <div class="category">
         <h3>Features</h3>
         <div class="buttons">
-          <a href="predict.html">Heart risk prediction 💖</a>
+          <a href="predict.html">Heart risk 💖</a>
         </div>
     </div>
 </div>
