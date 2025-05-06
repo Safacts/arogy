@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fetch Report</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.21.0/dist/supabase.min.js"></script>
+</head>
+<body>
+    <h1>Fetch Report</h1>
+    <form id="email-form">
+        <label for="email">Enter your Email:</label>
+        <input type="email" id="email" required />
+        <button type="submit">Fetch Report</button>
+    </form>
+
+    <div id="report">
+        <!-- Fetched data will be displayed here -->
+    </div>
+
+    <script>
+        // Initialize Supabase
+        const supabaseUrl = 'https://your-supabase-url.supabase.co'; // Replace with your Supabase URL
+        const supabaseKey = 'your-supabase-key'; // Replace with your Supabase Key
+        const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+
+        // Handle form submission
+        document.getElementById('email-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+
+            // Fetch the report from Supabase
+            const { data, error } = await supabase
+                .from('predictions')
+                .select('*')
+                .eq('email', email)
+                .single();
+
+            // Check if an error occurred or data was not found
+            if (error) {
+                document.getElementById('report').innerHTML = `<p>Error: ${error.message}</p>`;
+            } else if (data) {
+                // Display the report
+                const reportHtml = `
+                    <h2>Report for ${data.email}</h2>
+                    <p><strong>Age:</strong> ${data.age}</p>
+                    <p><strong>Blood Pressure:</strong> ${data.blood_pressure}</p>
+                    <p><strong>Cholesterol:</strong> ${data.cholesterol}</p>
+                    <p><strong>Result:</strong> ${data.result}</p>
+                    <p><strong>Created At:</strong> ${data.created_at}</p>
+                `;
+                document.getElementById('report').innerHTML = reportHtml;
+            } else {
+                document.getElementById('report').innerHTML = `<p>No report found for this email.</p>`;
+            }
+        });
+    </script>
+</body>
+</html>

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:file_picker/file_picker.dart';
+import 'package:uuid/uuid.dart'; // Add this at the top
 
 Process? flaskProcess;
 bool isServerRunning = false;
@@ -107,7 +108,158 @@ class _PredictorFormState extends State<PredictorForm> {
     super.dispose();
   }
 
-  Future<void> _getPrediction() async {
+  // Future<void> _getPrediction() async {
+  //   if (!isServerRunning) {
+  //     setState(() {
+  //       _statusMessage = "Server is not yet ready. Please try again later.";
+  //     });
+  //     return;
+  //   }
+
+  //   final url = Uri.parse('http://127.0.0.1:5000/predict');
+  //   try {
+  //     final response = await http.post(
+  //       url,
+  //       headers: {'Content-Type': 'application/json'},
+  //       body: jsonEncode({
+  //         'Age': int.parse(_ageController.text),
+  //         'BloodPressure': int.parse(_bpController.text),
+  //         'Cholesterol': int.parse(_cholesterolController.text),
+  //       }),
+  //     );
+
+  //     if (response.statusCode == 200) {
+  //       final data = jsonDecode(response.body);
+  //       setState(() {
+  //         _prediction = data['category'];
+  //         _probabilities = data['probabilities'];
+  //         _statusMessage = "✅ Prediction received!";
+  //       });
+  //     } else {
+  //       setState(() {
+  //         _prediction = 'Error: ${response.body}';
+  //         _probabilities = null;
+  //         _statusMessage = "⚠️ Failed to get prediction!";
+  //       });
+  //     }
+  //   } catch (e) {
+  //     setState(() {
+  //       _prediction = null;
+  //       _probabilities = null;
+  //       _statusMessage = "❌ Failed to connect to server: $e";
+  //     });
+  //   }
+  // }
+
+  // Future<void> _getPrediction() async {
+  //   if (!isServerRunning) {
+  //     setState(() {
+  //       _statusMessage = "Server is not yet ready. Please try again later.";
+  //     });
+  //     return;
+  //   }
+
+  //   try {
+  //     final int age = int.parse(_ageController.text);
+  //     final int bp = int.parse(_bpController.text);
+  //     final int cholesterol = int.parse(_cholesterolController.text);
+
+  //     // Derived features
+  //     String ageGroup = age < 40 ? "Young" : age <= 60 ? "Middle-aged" : "Senior";
+  //     String bpLevel = bp < 80
+  //         ? "Low"
+  //         : bp <= 120
+  //             ? "Normal"
+  //             : "High";
+  //     String cholesterolLevel = cholesterol < 150
+  //         ? "Low"
+  //         : cholesterol <= 240
+  //             ? "Normal"
+  //             : "High";
+  //     double bpToAgeRatio = bp / age;
+  //     double cholesterolToAgeRatio = cholesterol / age;
+  //     double combinedRiskIndex = (bpToAgeRatio + cholesterolToAgeRatio) / 2;
+
+  //     // Step 1: Send request to Flask server
+  //     final url = Uri.parse('http://127.0.0.1:5000/predict');
+  //     final response = await http.post(
+  //       url,
+  //       headers: {'Content-Type': 'application/json'},
+  //       body: jsonEncode({
+  //         'Age': age,
+  //         'BloodPressure': bp,
+  //         'Cholesterol': cholesterol,
+  //         'Age_Group': ageGroup,
+  //         'BP_Level': bpLevel,
+  //         'Cholesterol_Level': cholesterolLevel,
+  //         'BP_to_Age_Ratio': bpToAgeRatio,
+  //         'Cholesterol_to_Age_Ratio': cholesterolToAgeRatio,
+  //         'Combined_Risk_Index': combinedRiskIndex,
+  //       }),
+  //     );
+
+  //     if (response.statusCode == 200) {
+  //       final data = jsonDecode(response.body);
+  //       final category = data['category'];
+  //       final probabilities = data['probabilities'];
+
+  //       setState(() {
+  //         _prediction = category;
+  //         _probabilities = probabilities;
+  //         _statusMessage = "✅ Prediction received!";
+  //       });
+
+  //       // Step 2: Insert into Supabase if email is entered
+  //       final email = _emailController.text.trim();
+  //       if (email.isNotEmpty) {
+  //         final supabaseUrl = 'https://rsefkfixakbuqxqtsfww.supabase.co';
+  //         final supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJzZWZrZml4YWtidXF4cXRzZnd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUyMjc0NDcsImV4cCI6MjA2MDgwMzQ0N30.y4RUJCw5xhpVBbRToZIZ-Jg7jJBlUKg_pMO41VP-1BU'; // Replace with full anon key
+  //         final tableName = 'predictions'; // Replace with your actual table name
+
+  //         final supabaseResponse = await http.post(
+  //           Uri.parse('$supabaseUrl/rest/v1/$tableName'),
+  //           headers: {
+  //             'apikey': supabaseKey,
+  //             'Authorization': 'Bearer $supabaseKey',
+  //             'Content-Type': 'application/json',
+  //             'Prefer': 'return=representation',
+  //           },
+  //           body: jsonEncode({
+  //             'email': email,
+  //             'age': age,
+  //             'blood_pressure': bp,
+  //             'cholesterol': cholesterol,
+  //             'result': category,
+  //             'created_at': DateTime.now().toIso8601String(),
+  //           }),
+  //         );
+
+  //         if (supabaseResponse.statusCode == 201) {
+  //           print("✅ Data inserted into Supabase");
+  //         } else {
+  //           print("❌ Supabase error: ${supabaseResponse.body}");
+  //         }
+  //       }
+
+  //     } else {
+  //       setState(() {
+  //         _prediction = 'Error: ${response.body}';
+  //         _probabilities = null;
+  //         _statusMessage = "⚠️ Failed to get prediction!";
+  //       });
+  //     }
+  //   } catch (e) {
+  //     setState(() {
+  //       _prediction = null;
+  //       _probabilities = null;
+  //       _statusMessage = "❌ Failed to connect to server: $e";
+  //     });
+  //   }
+  // }
+
+final Uuid uuid = Uuid(); // Create UUID generator
+
+Future<void> _getPrediction() async {
     if (!isServerRunning) {
       setState(() {
         _statusMessage = "Server is not yet ready. Please try again later.";
@@ -115,25 +267,98 @@ class _PredictorFormState extends State<PredictorForm> {
       return;
     }
 
-    final url = Uri.parse('http://127.0.0.1:5000/predict');
     try {
+      final int age = int.parse(_ageController.text);
+      final int bp = int.parse(_bpController.text);
+      final int cholesterol = int.parse(_cholesterolController.text);
+
+      // Derived features
+      String ageGroup = age < 40 ? "Young" : age <= 60 ? "Middle-aged" : "Senior";
+      String bpLevel = bp < 80 ? "Low" : bp <= 120 ? "Normal" : "High";
+      String cholesterolLevel = cholesterol < 150 ? "Low" : cholesterol <= 240 ? "Normal" : "High";
+      double bpToAgeRatio = bp / age;
+      double cholesterolToAgeRatio = cholesterol / age;
+      double combinedRiskIndex = (bpToAgeRatio + cholesterolToAgeRatio) / 2;
+
+      // Step 1: Send request to Flask server
+      final url = Uri.parse('http://127.0.0.1:5000/predict');
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
-          'Age': int.parse(_ageController.text),
-          'BloodPressure': int.parse(_bpController.text),
-          'Cholesterol': int.parse(_cholesterolController.text),
+          'Age': age,
+          'BloodPressure': bp,
+          'Cholesterol': cholesterol,
+          'Age_Group': ageGroup,
+          'BP_Level': bpLevel,
+          'Cholesterol_Level': cholesterolLevel,
+          'BP_to_Age_Ratio': bpToAgeRatio,
+          'Cholesterol_to_Age_Ratio': cholesterolToAgeRatio,
+          'Combined_Risk_Index': combinedRiskIndex,
         }),
       );
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
+        final category = data['category'];
+        final probabilities = data['probabilities'];
+
         setState(() {
-          _prediction = data['category'];
-          _probabilities = data['probabilities'];
+          _prediction = category;
+          _probabilities = probabilities;
           _statusMessage = "✅ Prediction received!";
         });
+
+        // Step 2: Insert into Supabase if email is entered
+        final email = _emailController.text.trim();
+        if (email.isNotEmpty) {
+          final supabaseUrl = 'https://rsefkfixakbuqxqtsfww.supabase.co';
+          final supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJzZWZrZml4YWtidXF4cXRzZnd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUyMjc0NDcsImV4cCI6MjA2MDgwMzQ0N30.y4RUJCw5xhpVBbRToZIZ-Jg7jJBlUKg_pMO41VP-1BU'; // Replace with full anon key
+          final tableName = 'predictions';
+
+          // Check Supabase connectivity
+          final healthCheckResponse = await http.get(
+            Uri.parse('$supabaseUrl/rest/v1/$tableName?limit=1'),
+            headers: {
+              'apikey': supabaseKey,
+              'Authorization': 'Bearer $supabaseKey',
+            },
+          );
+
+          if (healthCheckResponse.statusCode == 200) {
+            // Generate UUID for id
+            final id = uuid.v4();
+
+            // Insert into Supabase
+            final supabaseResponse = await http.post(
+              Uri.parse('$supabaseUrl/rest/v1/$tableName'),
+              headers: {
+                'apikey': supabaseKey,
+                'Authorization': 'Bearer $supabaseKey',
+                'Content-Type': 'application/json',
+                'Prefer': 'return=representation',
+              },
+              body: jsonEncode({
+                'id': id,
+                'email': email,
+                'age': age,
+                'blood_pressure': bp,
+                'cholesterol': cholesterol,
+                'result': category,
+                'created_at': DateTime.now().toIso8601String(),
+              }),
+            );
+
+            if (supabaseResponse.statusCode == 201) {
+              print("✅ Data inserted into Supabase");
+            } else {
+              print("❌ Supabase insert error: ${supabaseResponse.body}");
+            }
+          } else {
+            print("⚠️ Supabase not reachable or unauthorized: ${healthCheckResponse.body}");
+          }
+        }
+
       } else {
         setState(() {
           _prediction = 'Error: ${response.body}';
@@ -149,6 +374,7 @@ class _PredictorFormState extends State<PredictorForm> {
       });
     }
   }
+
 
   Future<void> _uploadImageAndExtractData() async {
     final result = await FilePicker.platform.pickFiles(
