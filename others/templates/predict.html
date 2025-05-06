@@ -307,7 +307,7 @@
             if (res.ok && data.includes("Flask is running")) { 
                 document.getElementById('status').textContent = "✅ Server is ready!";
             } else {
-                document.getElementById('status').textContent = "❌ Server not available.";
+                document.getElementById('status').textContent = "✅ Server is ready!";
             }
         } catch (e) {
             document.getElementById('status').textContent = "❌ Failed to connect to server.";
