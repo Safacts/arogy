@@ -298,15 +298,20 @@
 
     const supabaseURL = "https://rsefkfixakbuqxqtsfww.supabase.co";
     const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJzZWZrZml4YWtidXF4cXRzZnd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUyMjc0NDcsImV4cCI6MjA2MDgwMzQ0N30.y4RUJCw5xhpVBbRToZIZ-Jg7jJBlUKg_pMO41VP-1BU";
-
+   
     window.onload = async () => {
-      try {
-        const res = await fetch(serverStatusURL);
-        document.getElementById('status').textContent =
-          res.ok ? "✅ Server is ready!" : "❌ Server not available.";
-      } catch (e) {
-        document.getElementById('status').textContent = "❌ Failed to connect to server.";
-      }
+        try {
+            const res = await fetch(serverStatusURL);
+            const data = await res.text(); // Ensure you're getting some response
+            
+            if (res.ok && data.includes("Flask is running")) { 
+                document.getElementById('status').textContent = "✅ Server is ready!";
+            } else {
+                document.getElementById('status').textContent = "❌ Server not available.";
+            }
+        } catch (e) {
+            document.getElementById('status').textContent = "❌ Failed to connect to server.";
+        }
     };
 
     function getDerivedFeatures(age, bp, cholesterol) {
