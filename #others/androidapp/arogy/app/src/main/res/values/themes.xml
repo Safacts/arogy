@@ -1,0 +1,19 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Base application theme -->
+    <style name="Base.Theme.Arogy" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- Primary color for the app -->
+        <item name="colorPrimary">#D32F2F</item>
+        <item name="colorPrimaryVariant">#B71C1C</item>
+        <item name="colorSecondary">#FF5722</item>
+
+        <!-- Status bar color fix -->
+        <item name="android:statusBarColor">#F0F0F0</item>
+
+        <!-- Background and text colors -->
+        <item name="android:background">#FFFFFF</item>
+        <item name="android:textColorPrimary">#333333</item>
+    </style>
+
+    <style name="Theme.Arogy" parent="Base.Theme.Arogy" />
+</resources>

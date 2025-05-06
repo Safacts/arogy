@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FAFAFA"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:orientation="vertical"
+        android:gravity="center"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+
+        android:padding="24dp">
+
+        <LinearLayout
+            android:orientation="vertical"
+
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="24dp"
+            android:layout_marginTop="40dp"
+            android:layout_marginBottom="40dp"
+            android:elevation="6dp"
+            android:layout_gravity="center"
+            android:clipToOutline="true"
+            android:background="@drawable/rounded_card"
+
+            android:backgroundTint="#FFFFFF">
+
+            <TextView
+                android:text="Fetch Report"
+                android:textSize="24sp"
+                android:textStyle="bold"
+                android:textColor="#D32F2F"
+                android:gravity="center"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="24dp" />
+
+            <TextView
+                android:text="Enter your Email"
+                android:textSize="16sp"
+                android:textColor="#333333"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp" />
+
+            <EditText
+                android:id="@+id/emailInput"
+                android:hint="you@example.com"
+                android:inputType="textEmailAddress"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="12dp"
+                android:background="@drawable/edittext_bg"
+                android:textSize="16sp"
+                android:layout_marginBottom="16dp" />
+
+            <Button
+                android:id="@+id/fetchButton"
+                android:text="Fetch Report"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:backgroundTint="#D32F2F"
+                android:textColor="#FFFFFF"
+                android:textSize="16sp"
+                android:padding="12dp"
+                android:layout_marginBottom="24dp" />
+
+            <TextView
+                android:id="@+id/reportView"
+                android:text=""
+                android:textSize="14sp"
+                android:textColor="#333333"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:lineSpacingExtra="4dp" />
+
+        </LinearLayout>
+    </LinearLayout>
+</ScrollView>
