@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Heart Report Viewer</title>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.21.0/dist/supabase.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
   <style>
     body {
@@ -92,14 +91,19 @@
     </div>
   </div>
 
-  <script>
+  <!-- Use Supabase V2 via ESM -->
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+
     const supabaseUrl = 'https://rsefkfixakbuqxqtsfww.supabase.co';
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJzZWZrZml4YWtidXF4cXRzZnd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUyMjc0NDcsImV4cCI6MjA2MDgwMzQ0N30.y4RUJCw5xhpVBbRToZIZ-Jg7jJBlUKg_pMO41VP-1BU';
-    const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
     document.getElementById('email-form').addEventListener('submit', async (e) => {
       e.preventDefault();
       const email = document.getElementById('email').value.trim();
+      const reportEl = document.getElementById('report');
+      reportEl.innerHTML = '🔄 Fetching report...';
 
       const { data, error } = await supabase
         .from('predictions')
@@ -107,9 +111,8 @@
         .eq('email', email)
         .order('created_at', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
-      const reportEl = document.getElementById('report');
       if (error) {
         reportEl.innerHTML = `<p class="error">❌ Error: ${error.message}</p>`;
       } else if (data) {
@@ -122,7 +125,7 @@
           <p><strong>Date:</strong> ${new Date(data.created_at).toLocaleString()}</p>
         `;
       } else {
-        reportEl.innerHTML = `<p>No report found for this email.</p>`;
+        reportEl.innerHTML = `<p>⚠️ No report found for this email.</p>`;
       }
     });
   </script>
