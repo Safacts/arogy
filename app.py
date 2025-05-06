@@ -8,6 +8,8 @@ import sys
 import re
 
 app = Flask(__name__)
+from flask_cors import CORS
+CORS(app)
 
 def resource_path(relative_path):
     base_path = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
