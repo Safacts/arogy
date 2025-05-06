@@ -12,11 +12,57 @@ void main() {
   runApp(HeartAttackPredictorApp());
 }
 
+// Future<void> startFlaskServer() async {
+//   try {
+//     final executablePath = Platform.resolvedExecutable;
+//     final currentDir = File(executablePath).parent.parent.path;
+//     final flaskExePath = '$currentDir\\dist\\app.exe';
+
+//     if (!File(flaskExePath).existsSync()) {
+//       print("❌ Flask server .exe not found at: $flaskExePath");
+//       return;
+//     }
+
+//     final process = await Process.start(flaskExePath, []);
+//     flaskProcess = process;
+
+//     process.stdout.transform(utf8.decoder).listen((data) {
+//       print('Flask stdout: $data');
+//     });
+
+//     process.stderr.transform(utf8.decoder).listen((data) {
+//       print('Flask stderr: $data');
+//     });
+
+//     const maxRetries = 10;
+//     for (int i = 0; i < maxRetries; i++) {
+//       try {
+//         final response = await http.get(Uri.parse('http://127.0.0.1:5000'));
+//         if (response.statusCode == 200 || response.statusCode == 404) {
+//           isServerRunning = true;
+//           print("✅ Flask server is ready.");
+//           break;
+//         }
+//       } catch (_) {}
+//       await Future.delayed(Duration(seconds: 1));
+//     }
+
+//     if (!isServerRunning) {
+//       print("❌ Flask server failed to start in time.");
+//     }
+//   } catch (e) {
+//     print('Error starting Flask server: $e');
+//   }
+// }
+
 Future<void> startFlaskServer() async {
   try {
     final executablePath = Platform.resolvedExecutable;
     final currentDir = File(executablePath).parent.parent.path;
     final flaskExePath = '$currentDir\\dist\\app.exe';
+
+    // 👉 Add this line to see the full path
+    print("Looking for Flask at: $flaskExePath");
 
     if (!File(flaskExePath).existsSync()) {
       print("❌ Flask server .exe not found at: $flaskExePath");
@@ -54,6 +100,7 @@ Future<void> startFlaskServer() async {
     print('Error starting Flask server: $e');
   }
 }
+
 
 class HeartAttackPredictorApp extends StatelessWidget {
   const HeartAttackPredictorApp({super.key});
