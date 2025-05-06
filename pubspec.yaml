@@ -30,12 +30,12 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  http: 1.2.2
+  http: ^1.4.0
   json_serializable: ^6.1.0
   provider: ^6.0.0
-  file_picker: ^8.1.4
-  tflite: ^1.1.2
-  google_ml_kit: ^0.6.0
+  file_picker: ^10.1.2
+  tflite_flutter: ^0.11.0  # Or the latest available version
+  google_ml_kit: ^0.20.0
   uuid: ^4.1.0
   # firebase_ml_vision: ^0.9.0  # For ML Kit
   # tflite_flutter: ^0.9.0  # If using custom TensorFlow Lite model
